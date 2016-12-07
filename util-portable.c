@@ -27,17 +27,11 @@
 
 #include "extern.h"
 
-static	uid_t uid;
-static	gid_t gid;
-
 int
 dropfs(const char *path)
 {
-
-	if (-1 == chroot(path))
-		warn("%s: chroot", path);
-	else if (-1 == chdir("/")) 
-		warn("/: chdir");
+	if (-1 == chdir(path))
+		warn("%s: chdir", path);
 	else
 		return(1);
 
@@ -47,49 +41,11 @@ dropfs(const char *path)
 int
 checkprivs(void)
 {
-	struct passwd	 *passent;
-
-	/* We need root for our chroots. */
-
-	if (0 != getuid())
-		return(0);
-
-	/* We need this for our privdropping. */
-
-	passent = getpwnam(NOBODY_USER);
-	if (NULL == passent) {
-		warnx("%s: unknown user", NOBODY_USER);
-		return(0);
-	}
-
-	uid = passent->pw_uid;
-	gid = passent->pw_gid;
 	return(1);
 }
 
 int
 dropprivs(void)
 {
-
-	/*
-	 * Safely drop privileges into the given credentials.
-	 */
-
-	if (setgroups(1, &gid) ||
-	    setresgid(gid, gid, gid) ||
-	    setresuid(uid, uid, uid)) {
-		warnx("drop privileges");
-		return(0);
-	}
-
-	if (getgid() != gid || getegid() != gid) {
-		warnx("failed to drop gid");
-		return(0);
-	}
-	if (getuid() != uid || geteuid() != uid) {
-		warnx("failed to drop uid");
-		return(0);
-	}
-
 	return(1);
 }

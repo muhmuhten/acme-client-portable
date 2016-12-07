@@ -31,6 +31,26 @@
 
 #include "extern.h"
 
+static const char b64url[] =
+	"-0123456789"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+	"abcdefghijklmnopqrstuvwxyz";
+
+static int
+slightly_paranoid_open(const char *const path, int flags, mode_t mode)
+{
+	/* We're not protected by chroot here (we gave that up to avoid running as
+	 * root), so we validate (slightly) to avoid escaping the challengedir. */
+	size_t j = strspn(path, b64url);
+	if (path[j] != 0 || j <= 21) {
+		errno = EROFS;
+		return -1;
+	}
+
+	return open(path, flags, mode);
+}
+#define open slightly_paranoid_open
+
 int
 chngproc(int netsock, const char *root, const struct config *cfg)
 {
